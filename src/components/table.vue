@@ -98,7 +98,7 @@
         <td>{{ props.item.name }}</td>
         <td class="text-xs-right">{{ props.item.time_backup }}</td>
         <td class="text-xs-right">{{ props.item.created_at }}</td>
-        <td class="text-xs-right"><v-btn style="background-color:green;">Crear respaldo</v-btn></td>
+        <td class="text-xs-right"><v-btn flat @click="respaldacion(props.item.id)" style="background-color:green;">Crear respaldo</v-btn></td>
         
         <td class="justify-center layout px-0">
           <v-icon
@@ -125,10 +125,14 @@
 </template>
 <script>
 import {API} from '../Servicios/Axios.js'
+import 'babel-polyfill';
+import Ws from '@adonisjs/websocket-client'
+const ws = Ws('ws://localhost:3333')
   export default {
     data: () => ({
         info: {},  
         id:'',
+        socket:null,
         edit:false,
       dialog2: false,
       dialog: false,
@@ -174,6 +178,15 @@ import {API} from '../Servicios/Axios.js'
 
     created () {
       this.initialize()
+      ws.connect()
+      this.socket = ws.subscribe('chat')
+        let chat = this.socket
+        chat.on('message2', (data) => {
+            console.log(data);
+        })
+        chat.on('ready', () => {
+          chat.emit('message', 'hello Server')
+        })
     },
 
     methods: {
@@ -189,6 +202,19 @@ import {API} from '../Servicios/Axios.js'
           console.log(response)
           
         })
+      },
+      respaldacion(item){
+        API.get('settings/'+item).then((response) =>{
+        let respa = response.data.name
+        console.log("respa tiene ->>>>>"+respa)
+         console.log('jiji '+item)
+        this.socket.emit('message', item)
+       })
+      API.put('settings/'+item,{
+         "status": 'true'
+       })
+       console.log('jiji' )
+      
       },
       editItem (item) {
         this.edit = true
